@@ -20,7 +20,7 @@ pd.DataFrame(ev).to_csv("analise_barsi_eua/evolucao_mensal.csv", index=False)
 pd.DataFrame(dv).to_csv("analise_barsi_eua/dividendos_anuais.csv", index=False)
 print(len(ev), len(dv), tks)
 
-# Yield sem dividendos extraordinários: descarta pagamentos dos últimos 12 meses acima de 3x a mediana dos 8 últimos.
+# Yield sem dividendos extraordinários: um pagamento acima de 3x a mediana dos 8 últimos conta só como a mediana (parte regular).
 ys = []
 for t in res.ticker:
     r = json.load(open(f"analise_barsi_eua/cache/{t}.json"))
@@ -28,7 +28,7 @@ for t in res.ticker:
     fim = pd.Timestamp(res.loc[res.ticker == t, "data_fim"].iloc[0])
     u = s[s.index > fim - pd.DateOffset(years=1)]
     med = s.iloc[-8:].median() if len(s) else 0
-    reg = u[u <= 3 * med].sum() if len(u) else 0.0
+    reg = u.where(u <= 3 * med, med).sum() if len(u) else 0.0
     ys.append(round(reg / res.loc[res.ticker == t, "preco_atual"].iloc[0] * 100, 2))
 res["yield_sem_extra_pct"] = ys
 res.to_csv("analise_barsi_eua/universo_completo.csv", index=False)
